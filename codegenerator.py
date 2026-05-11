@@ -1,4 +1,4 @@
-import streamlit as st
+import streamlit as 
 import qrcode
 import barcode
 from barcode.writer import ImageWriter
