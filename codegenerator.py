@@ -75,8 +75,15 @@ with tab2:
     uploaded = st.file_uploader("Upload an Excel or CSV file", type=["xlsx", "xls", "csv"])
 
     if uploaded:
+        
         try:
-            df = pd.read_csv(uploaded) if uploaded.name.endswith(".csv") else pd.read_excel(uploaded)
+            if uploaded.name.endswith(".csv"):
+                df = pd.read_csv(uploaded)
+            else:
+                xl = pd.ExcelFile(uploaded)
+                sheet = st.selectbox("Select sheet", xl.sheet_names)
+                uploaded.seek(0)  # 重置文件指针
+                df = xl.parse(sheet)
         except Exception as e:
             st.error(f"Failed to read file: {e}")
             st.stop()
