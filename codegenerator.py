@@ -58,12 +58,12 @@ Any extra columns are ignored.
 **Character limits by code type:**
 | Code Type | `text` requirement |
 |-----------|-------------------|
-| QR Code | Any string |
-| Code128 | Any string |
-| Code39 | Uppercase letters, digits, and ` - . $ / + % space` |
-| EAN13 | Exactly **12** digits (check digit auto-added) |
-| EAN8 | Exactly **7** digits (check digit auto-added) |
-| UPCA | Exactly **11** digits (check digit auto-added) |
+| QR Code | 任意字符串（含中文） |
+| Code128 | 任意 ASCII 字符串（字母、数字、符号，不含中文） |
+| Code39 | 大写字母、数字，以及 - . $ / + % 空格 |
+| EAN13 | **12** 位数字（末位校验码自动生成） |
+| EAN8 | **7** 位数字（末位校验码自动生成 |
+| UPCA | **11** 位数字（末位校验码自动生成） |
 """)
         template_df = pd.DataFrame({"text": ["ER46", "ER47", "ER48"]})
         st.dataframe(template_df, use_container_width=True, hide_index=True)
