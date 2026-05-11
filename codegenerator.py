@@ -7,7 +7,6 @@ import pandas as pd
 import zipfile
 from openpyxl import Workbook
 from openpyxl.drawing.image import Image as XLImage
-from openpyxl.utils import get_column_letter
 
 st.title("QR Code & Barcode Generator")
 
@@ -52,20 +51,19 @@ with tab1:
 with tab2:
     with st.expander("📋 File Format Guide", expanded=True):
         st.markdown("""
-**Required column:** `text` — the value to encode. The output filename will use this value.  
-Any extra columns are ignored.
+上传任意 Excel 或 CSV 文件，将自动使用**第一列**的数据生成码。
 
-**Character limits by code type:**
-| Code Type | `text` requirement |
-|-----------|-------------------|
+**各码型字符要求：**
+| 码型 | 要求 |
+|------|------|
 | QR Code | 任意字符串（含中文） |
 | Code128 | 任意 ASCII 字符串（字母、数字、符号，不含中文） |
-| Code39 | 大写字母、数字，以及 - . $ / + % 空格 |
-| EAN13 | **12** 位数字（末位校验码自动生成） |
-| EAN8 | **7** 位数字（末位校验码自动生成 |
-| UPCA | **11** 位数字（末位校验码自动生成） |
+| Code39 | 大写字母、数字，以及 ` - . $ / + % 空格` |
+| EAN13 | 恰好 **12** 位数字（末位校验码自动生成） |
+| EAN8 | 恰好 **7** 位数字（末位校验码自动生成） |
+| UPCA | 恰好 **11** 位数字（末位校验码自动生成） |
 """)
-        template_df = pd.DataFrame({"text": ["ER46", "ER47", "ER48"]})
+        template_df = pd.DataFrame({"SKU": ["ER46", "ER47", "ER48"]})
         st.dataframe(template_df, use_container_width=True, hide_index=True)
         st.download_button(
             "⬇️ Download template CSV",
@@ -85,12 +83,10 @@ Any extra columns are ignored.
 
         st.dataframe(df.head(), use_container_width=True)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            text_col = st.selectbox("Text Column", df.columns.tolist())
-        with col2:
-            batch_type = st.selectbox("Code Type", ["QR Code", "Code128", "Code39", "EAN13", "EAN8", "UPCA"], key="batch")
+        text_col = df.columns[0]
+        st.info(f"Using column: **{text_col}**")
 
+        batch_type = st.selectbox("Code Type", ["QR Code", "Code128", "Code39", "EAN13", "EAN8", "UPCA"], key="batch")
         output_format = st.radio("Output Format", ["ZIP (individual PNGs)", "Excel (images in column B)"], horizontal=True)
 
         if st.button("Generate", key="batch_generate"):
@@ -102,30 +98,23 @@ Any extra columns are ignored.
             errors = []
             progress = st.progress(0, text="Generating...")
 
-            # ── Excel output ──────────────────────────────
             if output_format == "Excel (images in column B)":
                 wb = Workbook()
                 ws = wb.active
                 ws.column_dimensions["A"].width = 20
                 ws.column_dimensions["B"].width = 40
-
-                # Header
-                ws["A1"] = "text"
+                ws["A1"] = text_col
                 ws["B1"] = batch_type
-
-                ROW_HEIGHT = 80  # pixels → approx row height in points
-                IMG_H = 70       # image height to embed (px)
 
                 for i, val in enumerate(values):
                     row = i + 2
-                    ws.row_dimensions[row].height = ROW_HEIGHT
+                    ws.row_dimensions[row].height = 80
                     ws[f"A{row}"] = str(val)
                     try:
                         img_buf = generate_code(val, batch_type)
                         xl_img = XLImage(img_buf)
-                        # Scale to fixed height, keep aspect ratio
-                        ratio = IMG_H / xl_img.height
-                        xl_img.height = IMG_H
+                        ratio = 70 / xl_img.height
+                        xl_img.height = 70
                         xl_img.width = int(xl_img.width * ratio)
                         ws.add_image(xl_img, f"B{row}")
                     except Exception as e:
@@ -149,7 +138,6 @@ Any extra columns are ignored.
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                 )
 
-            # ── ZIP output ────────────────────────────────
             else:
                 zip_buf = BytesIO()
                 with zipfile.ZipFile(zip_buf, "w", zipfile.ZIP_DEFLATED) as zf:
